@@ -2,6 +2,7 @@ use adv_code_2024::*;
 use anyhow::*;
 use code_timing_macros::time_snippet;
 use const_format::concatcp;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -47,6 +48,23 @@ fn part1<R: BufRead>(reader: R) -> Result<usize> {
     Ok(total_distance)
 }
 
+fn part2<R: BufRead>(reader: R) -> Result<i32> {
+    let (left, right) = parse_input(reader)?;
+
+    // Count occurrences in the right list
+    let mut right_counts: HashMap<i32, i32> = HashMap::new();
+    for &num in &right {
+        *right_counts.entry(num).or_insert(0) += 1;
+    }
+
+    let similarity_score: i32 = left
+        .iter()
+        .map(|&num| num * right_counts.get(&num).copied().unwrap_or(0))
+        .sum();
+
+    Ok(similarity_score)
+}
+
 fn main() -> Result<()> {
     start_day(DAY);
 
@@ -61,5 +79,15 @@ fn main() -> Result<()> {
     let result = time_snippet!(part1(input_file)?);
     println!("Result = {}", result);
 
-    Ok(())
+    println!("=== Part 2 ===");
+    assert_eq!(
+        31,
+        part2(BufReader::new(TEST.as_bytes())).expect("Test case failed")
+    );
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = part2(input_file)?;
+    println!("Result = {}", result);
+
+   Ok(())
 }
