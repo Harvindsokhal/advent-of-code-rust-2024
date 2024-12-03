@@ -30,24 +30,29 @@ fn parse_input<R: BufRead>(reader: R) -> Result<Vec<Vec<i32>>> {
 }
 
 fn is_safe(report: &[i32]) -> bool {
-    if report.len() < 2 {
-        return true; // Single-level reports are usually safe
-    }
-
-    // Check difference between adjacent levels
     let diffs: Vec<i32> = report.windows(2).map(|w| w[1] - w[0]).collect();
 
-    // Differences must be in th range [1, 3] or [-1, -3]
-    let all_valid_diffs = diffs.iter().all(|&d| d.abs() >= 1 && d.abs() <= 3);
-
-    if !all_valid_diffs {
-        return false;
-    }
-
-    let all_increasing = diffs.iter().all(|&d| d > 0);
-    let all_decreasing = diffs.iter().all(|&d| d < 0);
+    let all_increasing = diffs.iter().all(|&d| d > 0 && d <=3);
+    let all_decreasing = diffs.iter().all(|&d| d < 0 && d >= -3);
 
     all_increasing || all_decreasing
+}
+
+fn is_safe_with_dampener(levels: &[i32]) -> bool {
+    if is_safe(levels) {
+        return true; // Already safe without removing any level
+    }
+
+    // Try removing each level and checking if the result is safe
+    for i in 0..levels.len() {
+        let mut modified = levels.to_vec();
+        modified.remove(i); // Remove one level
+        if is_safe(&modified) {
+            return true; // Found a modification that maks the report safe
+        }
+    }
+
+    false // No single modification can make the report safe
 }
 
 fn part1<R: BufRead>(reader: R) -> Result<usize> {
@@ -55,6 +60,16 @@ fn part1<R: BufRead>(reader: R) -> Result<usize> {
     let safe_count = reports.iter().filter(|&report| is_safe(report)).count();
     Ok(safe_count)
 }
+
+fn part2<R: BufRead>(reader: R) -> Result<usize> {
+    let reports = parse_input(reader)?;
+    let safe_count = reports
+        .iter()
+        .filter(|report| is_safe_with_dampener(report))
+        .count();
+    Ok(safe_count)
+}
+
 fn main() -> Result<()> {
     start_day(DAY);
 
@@ -64,6 +79,14 @@ fn main() -> Result<()> {
 
     let input_file = BufReader::new(File::open(INPUT_FILE)?);
     let result = time_snippet!(part1(input_file)?);
+    println!("Result = {}", result);
+
+    // Part 2
+    println!("=== Part 2 ===");
+    assert_eq!(4, part2(BufReader::new(TEST.as_bytes()))?);
+
+    let input_file = BufReader::new(File::open(INPUT_FILE)?);
+    let result = time_snippet!(part2(input_file)?);
     println!("Result = {}", result);
 
     Ok(())
